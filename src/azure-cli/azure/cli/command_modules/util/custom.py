@@ -33,12 +33,19 @@ def show_version(cmd):  # pylint: disable=unused-argument
 
 
 def upgrade_version(cmd, update_all=None, yes=None):  # pylint: disable=too-many-locals, too-many-statements, too-many-branches, no-member
+    import os
+    import platform
+    import sys
     import subprocess
+    import azure.cli.core.telemetry as telemetry
     from azure.cli.core._environment import _ENV_AZ_INSTALLER
     from azure.cli.core.util import CLI_PACKAGE_NAME, _get_local_versions, _update_latest_from_pypi
+    from azure.cli.core.extension import get_extensions, WheelExtension
+    from azure.cli.core.extension._resolve import resolve_from_index, NoExtensionCandidatesError
+    from azure.cli.core.extension.operations import update_extension
     from distutils.version import LooseVersion
     from knack.util import CLIError
-    import azure.cli.core.telemetry as telemetry
+
     update_cli = True
     versions = _get_local_versions()
     local = versions[CLI_PACKAGE_NAME]['local']
@@ -49,7 +56,7 @@ def upgrade_version(cmd, update_all=None, yes=None):  # pylint: disable=too-many
     if pypi and LooseVersion(pypi) <= LooseVersion(local):
         logger.warning("You already have the latest %s: %s", CLI_PACKAGE_NAME, local)
         update_cli = False
-        if not _all:
+        if not update_all:
             return
     exit_code = 0
     if update_cli:
@@ -61,8 +68,6 @@ def upgrade_version(cmd, update_all=None, yes=None):  # pylint: disable=too-many
             if not confirmation:
                 telemetry.set_success("Upgrade stopped by user")
                 return
-        import os
-        import platform
         installer = os.getenv(_ENV_AZ_INSTALLER)
         if installer == 'DEB':
             from azure.cli.core.util import in_cloud_console
@@ -95,9 +100,9 @@ def upgrade_version(cmd, update_all=None, yes=None):  # pylint: disable=too-many
                 else:
                     logger.warning(UPGRADE_MSG)
         elif installer == 'HOMEBREW':
-            exit_code = subprocess.call('brew update && brew upgrade -y azure-cli'.split())
+            subprocess.call(['brew', 'update'])
+            exit_code = subprocess.call(['brew', 'upgrade', 'azure-cli'])
         elif installer == 'PIP':
-            import sys
             pip_args = [sys.executable, '-m', 'pip', 'install', '--upgrade', 'azure-cli', '-vv',
                         '--disable-pip-version-check', '--no-cache-dir']
             logger.debug('Executing pip with args: %s', pip_args)
@@ -107,7 +112,7 @@ def upgrade_version(cmd, update_all=None, yes=None):  # pylint: disable=too-many
             logger.warning("Exit the container to pull latest image with 'docker pull mcr.microsoft.com/azure-cli' "
                            "or 'pip install --upgrade azure-cli' in this container")
         elif installer == 'MSI':
-            exit_code = subprocess.call(['powershell.exe', 'Start-Process powershell -Verb runAs -ArgumentList "Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi;Start-Process msiexec.exe -Wait -ArgumentList \'/I AzureCLI.msi\';Remove-Item .\AzureCLI.msi"'])
+            exit_code = subprocess.call(['powershell.exe', 'Start-Process powershell -Verb runAs -ArgumentList "Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile AzureCLI.msi;Start-Process msiexec.exe -Wait -ArgumentList \'/I AzureCLI.msi\';Remove-Item AzureCLI.msi"'])  # pylint: disable=line-too-long
         else:
             logger.warning(UPGRADE_MSG)
     if exit_code:
@@ -115,9 +120,6 @@ def upgrade_version(cmd, update_all=None, yes=None):  # pylint: disable=too-many
         sys.exit(exit_code)
     ext_sources = []
     if update_all:
-        from azure.cli.core.extension import get_extensions, WheelExtension
-        from azure.cli.core.extension._resolve import resolve_from_index, NoExtensionCandidatesError
-        from azure.cli.core.extension.operations import update_extension
         extensions = get_extensions(ext_type=WheelExtension)
         if extensions:
             for ext in extensions:
