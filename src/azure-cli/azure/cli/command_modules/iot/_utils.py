@@ -59,3 +59,11 @@ def generateKey(byteLength=32):
         key += chr(random.randrange(1, 128))
         byteLength -= 1
     return base64.b64encode(key.encode()).decode('utf-8')
+
+
+def validate_key_value_pairs(string):
+    result = None
+    if string:
+        kv_list = [x for x in string.split(";") if "=" in x]  # key-value pairs
+        result = dict(x.split("=", 1) for x in kv_list)
+    return result

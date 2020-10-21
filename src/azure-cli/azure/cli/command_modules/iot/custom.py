@@ -46,7 +46,7 @@ from azure.mgmt.iotcentral.models import (AppSkuInfo,
 
 from azure.cli.command_modules.iot.shared import EndpointType, EncodingFormat, RenewKeyType, AuthenticationType
 from ._client_factory import resource_service_factory
-from ._utils import open_certificate, generateKey
+from ._utils import open_certificate, generateKey, validate_key_value_pairs
 
 
 logger = get_logger(__name__)
@@ -389,7 +389,8 @@ def iot_hub_create(cmd, client, hub_name, resource_group_name, location=None,
                    fileupload_sas_ttl=1,
                    fileupload_storage_authentication_type=None,
                    fileupload_storage_container_uri=None,
-                   min_tls_version=None):
+                   min_tls_version=None,
+                   tags=None):
     from datetime import timedelta
     cli_ctx = cmd.cli_ctx
     if enable_fileupload_notifications:
@@ -404,6 +405,8 @@ def iot_hub_create(cmd, client, hub_name, resource_group_name, location=None,
         raise CLIError('Key-based authentication requires a connection string.')
     if identity_based_file_upload and not fileupload_storage_container_uri:
         raise CLIError('Identity-based authentication requires a storage container uri (--fileupload-storage-container-uri, --fcu).')
+    if tags:
+        tags = validate_key_value_pairs(tags)
     location = _ensure_location(cli_ctx, resource_group_name, location)
     sku = IotHubSkuInfo(name=sku, capacity=unit)
 
@@ -436,8 +439,8 @@ def iot_hub_create(cmd, client, hub_name, resource_group_name, location=None,
 
     hub_description = IotHubDescription(location=location,
                                         sku=sku,
-                                        properties=properties)
-
+                                        properties=properties,
+                                        tags=tags)
     return client.iot_hub_resource.create_or_update(resource_group_name, hub_name, hub_description)
 
 

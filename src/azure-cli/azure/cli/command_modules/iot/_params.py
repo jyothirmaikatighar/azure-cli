@@ -261,6 +261,11 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('hub_name', completer=None)
         c.argument('location', get_location_type(self.cli_ctx),
                    help='Location of your IoT Hub. Default is the location of target resource group.')
+        c.argument(
+            "tags",
+            options_list=["--tags"],
+            help="IoT hub instance tags. Property bag in key-value pairs with the following format: a=b;c=d.",
+        )
 
     with self.argument_context('iot hub show-connection-string') as c:
         c.argument('show_all', options_list=['--all'], help='Allow to show all shared access policies.')
