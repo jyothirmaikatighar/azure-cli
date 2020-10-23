@@ -7,7 +7,11 @@
 from azure.cli.testsdk import ScenarioTest, ResourceGroupPreparer
 
 from azure.cli.command_modules.iot.tests.latest._test_utils import _create_test_cert, _delete_test_cert, _create_verification_cert
+from ..._utils import validate_key_value_pairs
 import random
+
+
+MOCK_RESOURCE_TAGS = "a=b;c=d"
 
 
 class IoTDpsTest(ScenarioTest):
@@ -23,9 +27,10 @@ class IoTDpsTest(ScenarioTest):
                          self.check('sku.name', 'S1')])
 
         # Create DPS
-        self.cmd('az iot dps create -g {} -n {}'.format(group_name, dps_name), checks=[
+        self.cmd('az iot dps create -g {} -n {} --tags {}'.format(group_name, dps_name, MOCK_RESOURCE_TAGS), checks=[
             self.check('name', dps_name),
-            self.check('location', group_location)
+            self.check('location', group_location),
+            self.check('tags', validate_key_value_pairs(MOCK_RESOURCE_TAGS))
         ])
 
         # List DPS

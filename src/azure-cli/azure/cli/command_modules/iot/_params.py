@@ -59,6 +59,11 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('sku', arg_type=get_enum_type(IotDpsSku),
                    help='Pricing tier for the IoT provisioning service.')
         c.argument('unit', help='Units in your IoT Provisioning Service.', type=int)
+        c.argument(
+            "tags",
+            options_list=["--tags"],
+            help="IoT hub dps instance tags. Property bag in key-value pairs with the following format: a=b;c=d."
+        )
 
     for subgroup in ['access-policy', 'linked-hub', 'certificate']:
         with self.argument_context('iot dps {}'.format(subgroup)) as c:
